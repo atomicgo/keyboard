@@ -51,6 +51,22 @@
 Package keyboard can be used to read key presses from the keyboard, while in a
 terminal application. It's crossplatform and keypresses can be combined.
 
+Example:
+
+    keyboard.StartListener()
+    defer keyboard.StopListener()
+
+    for {
+    	keyInfo, _ := keyboard.GetKey()
+    	key := keyInfo.Code
+
+    	if key == keys.CtrlC {
+    		break
+    	}
+
+    	fmt.Println("\r", keyInfo.String())
+    }
+
 ## Install
 
 <p align="center">
@@ -83,6 +99,78 @@ import "atomicgo.dev/keyboard"
 ```
 
 ## Usage
+
+#### func  GetKey
+
+```go
+func GetKey() (keys.Key, error)
+```
+GetKey blocks until a key is pressed and returns the key info.
+
+Example:
+
+    keyboard.StartListener()
+
+    for {
+      keyInfo, _ := keyboard.GetKey()
+      key := keyInfo.Code
+
+      if key == keys.CtrlC {
+        break
+      }
+
+      fmt.Println("\r", keyInfo.String())
+    }
+
+    keyboard.StopListener()
+
+#### func  StartListener
+
+```go
+func StartListener() error
+```
+StartListener starts the keyboard listener
+
+Example:
+
+    keyboard.StartListener()
+
+    for {
+      keyInfo, _ := keyboard.GetKey()
+      key := keyInfo.Code
+
+      if key == keys.CtrlC {
+        break
+      }
+
+      fmt.Println("\r", keyInfo.String())
+    }
+
+    keyboard.StopListener()
+
+#### func  StopListener
+
+```go
+func StopListener() error
+```
+StopListener stops the keyboard listener
+
+Example:
+
+    keyboard.StartListener()
+
+    for {
+      keyInfo, _ := keyboard.GetKey()
+      key := keyInfo.Code
+
+      if key == keys.CtrlC {
+        break
+      }
+
+      fmt.Println("\r", keyInfo.String())
+    }
+
+    keyboard.StopListener()
 
 ---
 
