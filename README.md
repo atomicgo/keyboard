@@ -1,25 +1,25 @@
-<h1 align="center">AtomicGo | template</h1>
+<h1 align="center">AtomicGo | keyboard</h1>
 
 <p align="center">
 
-<a href="https://github.com/atomicgo/template/releases">
-<img src="https://img.shields.io/github/v/release/atomicgo/template?style=flat-square" alt="Latest Release">
+<a href="https://github.com/atomicgo/keyboard/releases">
+<img src="https://img.shields.io/github/v/release/atomicgo/keyboard?style=flat-square" alt="Latest Release">
 </a>
 
-<a href="https://codecov.io/gh/atomicgo/template" target="_blank">
-<img src="https://img.shields.io/github/workflow/status/atomicgo/template/Go?label=tests&style=flat-square" alt="Tests">
+<a href="https://codecov.io/gh/atomicgo/keyboard" target="_blank">
+<img src="https://img.shields.io/github/workflow/status/atomicgo/keyboard/Go?label=tests&style=flat-square" alt="Tests">
 </a>
 
-<a href="https://codecov.io/gh/atomicgo/template" target="_blank">
-<img src="https://img.shields.io/codecov/c/gh/atomicgo/template?color=magenta&logo=codecov&style=flat-square" alt="Coverage">
+<a href="https://codecov.io/gh/atomicgo/keyboard" target="_blank">
+<img src="https://img.shields.io/codecov/c/gh/atomicgo/keyboard?color=magenta&logo=codecov&style=flat-square" alt="Coverage">
 </a>
 
-<a href="https://codecov.io/gh/atomicgo/template">
-<!-- unittestcount:start --><img src="https://img.shields.io/badge/Unit_Tests-1-magenta?style=flat-square" alt="Unit test count"><!-- unittestcount:end -->
+<a href="https://codecov.io/gh/atomicgo/keyboard">
+<!-- unittestcount:start --><img src="https://img.shields.io/badge/Unit_Tests-0-magenta?style=flat-square" alt="Unit test count"><!-- unittestcount:end -->
 </a>
 
-<a href="https://github.com/atomicgo/template/issues">
-<img src="https://img.shields.io/github/issues/atomicgo/template.svg?style=flat-square" alt="Issues">
+<a href="https://github.com/atomicgo/keyboard/issues">
+<img src="https://img.shields.io/github/issues/atomicgo/keyboard.svg?style=flat-square" alt="Issues">
 </a>
 
 <a href="https://opensource.org/licenses/MIT" target="_blank">
@@ -33,7 +33,7 @@
 <p align="center">
 <strong><a href="#install">Get The Module</a></strong>
 |
-<strong><a href="https://pkg.go.dev/atomicgo.dev/template#section-documentation" target="_blank">Documentation</a></strong>
+<strong><a href="https://pkg.go.dev/atomicgo.dev/keyboard#section-documentation" target="_blank">Documentation</a></strong>
 |
 <strong><a href="https://github.com/atomicgo/atomicgo/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a></strong>
 |
@@ -48,12 +48,8 @@
 
 ## Description
 
-Package template is used to generate new AtomicGo repositories.
-
-Write the description of the module here. You can use **markdown**! This
-description should clearly explain what the package does.
-
-Example description: https://golang.org/src/encoding/gob/doc.go
+Package keyboard can be used to read key presses from the keyboard, while in a
+terminal application. It's crossplatform and keypresses can be combined.
 
 ## Install
 
@@ -68,7 +64,7 @@ Example description: https://golang.org/src/encoding/gob/doc.go
 </tbody>
 </table>
 </p>
-<h3  align="center"><pre>go get atomicgo.dev/template</pre></h3>
+<h3  align="center"><pre>go get atomicgo.dev/keyboard</pre></h3>
 <p align="center">
 <table>
 <tbody>
@@ -83,17 +79,10 @@ Example description: https://golang.org/src/encoding/gob/doc.go
 
 ```go
 // Add this to your imports
-import "atomicgo.dev/template"
+import "atomicgo.dev/keyboard"
 ```
 
 ## Usage
-
-#### func  HelloWorld
-
-```go
-func HelloWorld() string
-```
-HelloWorld returns `Hello, World!`.
 
 ---
 
