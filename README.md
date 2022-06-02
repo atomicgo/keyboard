@@ -46,6 +46,30 @@
   <img src="https://raw.githubusercontent.com/atomicgo/atomicgo/main/assets/header.png" alt="AtomicGo">
 </p>
 
+<p align="center">
+<table>
+<tbody>
+<td align="center">
+<img width="2000" height="0"><br>
+  ------------------------------------------------------------------------------------------------------------------------------
+<img width="2000" height="0">
+</td>
+</tbody>
+</table>
+</p>
+<h3  align="center"><pre>go get atomicgo.dev/keyboard</pre></h3>
+<p align="center">
+<table>
+<tbody>
+<td align="center">
+<img width="2000" height="0"><br>
+   ------------------------------------------------------------------------------------------------------------------------------
+<img width="2000" height="0">
+</td>
+</tbody>
+</table>
+</p>
+
 ## Description
 
 Package keyboard can be used to read key presses from the keyboard, while in a
@@ -72,110 +96,26 @@ Works nicely with https://atomicgo.dev/cursor
 
 ```
 
-## Install
-
-<p align="center">
-<table>
-<tbody>
-<td align="center">
-<img width="2000" height="0"><br>
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-<img width="2000" height="0">
-</td>
-</tbody>
-</table>
-</p>
-<h3  align="center"><pre>go get atomicgo.dev/keyboard</pre></h3>
-<p align="center">
-<table>
-<tbody>
-<td align="center">
-<img width="2000" height="0"><br>
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-<img width="2000" height="0">
-</td>
-</tbody>
-</table>
-</p>
-
-```go
-// Add this to your imports
-import "atomicgo.dev/keyboard"
-```
 
 ## Usage
 
-#### func  GetKey
+#### func  GetListener
 
 ```go
-func GetKey() (keys.Key, error)
+func GetListener() (listener chan keys.Key, cancel chan bool)
 ```
-GetKey blocks until a key is pressed and returns the key info.
 
-Example:
-
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
-
-#### func  StartListener
+#### func  Listen
 
 ```go
-func StartListener() error
+func Listen(onKeyPress func(keyInfo keys.Key) (stop bool, err error)) error
 ```
-StartListener starts the keyboard listener
 
-Example:
-
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
-
-#### func  StopListener
+#### func  MockKey
 
 ```go
-func StopListener() error
+func MockKey(key keys.Key) error
 ```
-StopListener stops the keyboard listener
-
-Example:
-
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
 
 ---
 
