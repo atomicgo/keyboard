@@ -46,40 +46,12 @@
   <img src="https://raw.githubusercontent.com/atomicgo/atomicgo/main/assets/header.png" alt="AtomicGo">
 </p>
 
-## Description
-
-Package keyboard can be used to read key presses from the keyboard, while in a
-terminal application. It's crossplatform and keypresses can be combined to check
-for ctrl+c, alt+4, ctrl-shift, alt+ctrl+right, etc.
-
-Works nicely with https://atomicgo.dev/cursor
-
-```go
-
-    keyboard.StartListener()
-    defer keyboard.StopListener()
-
-    for {
-    	keyInfo, _ := keyboard.GetKey()
-    	key := keyInfo.Code
-
-    	if key == keys.CtrlC {
-    		break
-    	}
-
-    	fmt.Println("\r", keyInfo.String())
-    }
-
-```
-
-## Install
-
 <p align="center">
 <table>
 <tbody>
 <td align="center">
 <img width="2000" height="0"><br>
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ------------------------------------------------------------------------------------------------------------------------------
 <img width="2000" height="0">
 </td>
 </tbody>
@@ -91,91 +63,115 @@ Works nicely with https://atomicgo.dev/cursor
 <tbody>
 <td align="center">
 <img width="2000" height="0"><br>
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   ------------------------------------------------------------------------------------------------------------------------------
 <img width="2000" height="0">
 </td>
 </tbody>
 </table>
 </p>
 
-```go
-// Add this to your imports
-import "atomicgo.dev/keyboard"
-```
+## Description
+
+Package keyboard can be used to read key presses from the keyboard, while in a
+terminal application. It's crossplatform and keypresses can be combined to check
+for ctrl+c, alt+4, ctrl-shift, alt+ctrl+right, etc. It can also be used to
+simulate (mock) keypresses for CI testing.
+
+Works nicely with https://atomicgo.dev/cursor
+
+## Simple Usage
+
+    keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+    	if key.Code == keys.CtrlC {
+    		return true, nil // Stop listener by returning true on Ctrl+C
+    	}
+
+    	fmt.Println("\r" + key.String()) // Print every key press
+    	return false, nil // Return false to continue listening
+    })
+
+## Advanced Usage
+
+    // Stop keyboard listener on Escape key press or CTRL+C.
+    // Exit application on "q" key press.
+    // Print every rune key press.
+    // Print every other key press.
+    keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+    	switch key.Code {
+    	case keys.CtrlC, keys.Escape:
+    		return true, nil // Return true to stop listener
+    	case keys.RuneKey: // Check if key is a rune key (a, b, c, 1, 2, 3, ...)
+    		if key.String() == "q" { // Check if key is "q"
+    			fmt.Println("\rQuitting application")
+    			os.Exit(0) // Exit application
+    		}
+    		fmt.Printf("\rYou pressed the rune key: %s\n", key)
+    	default:
+    		fmt.Printf("\rYou pressed: %s\n", key)
+    	}
+
+    	return false, nil // Return false to continue listening
+    })
+
+## Simulate Key Presses (for mocking in tests)
+
+    	go func() {
+    		keyboard.SimulateKeyPress("Hello")             // Simulate key press for every letter in string
+    		keyboard.SimulateKeyPress(keys.Enter)          // Simulate key press for Enter
+    		keyboard.SimulateKeyPress(keys.CtrlShiftRight) // Simulate key press for Ctrl+Shift+Right
+    		keyboard.SimulateKeyPress('x')                 // Simulate key press for a single rune
+            keyboard.SimulateKeyPress('x', keys.Down, 'a') // Simulate key presses for multiple inputs
+
+    		keyboard.SimulateKeyPress(keys.Escape) // Simulate key press for Escape, which quits the program
+    	}()
+
+    	keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+    		if key.Code == keys.Escape || key.Code == keys.CtrlC {
+    			os.Exit(0) // Exit program on Escape
+    		}
+
+    		fmt.Println("\r" + key.String()) // Print every key press
+    		return false, nil                // Return false to continue listening
+    	})
+
 
 ## Usage
 
-#### func  GetKey
+#### func  Listen
 
 ```go
-func GetKey() (keys.Key, error)
+func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error
 ```
-GetKey blocks until a key is pressed and returns the key info.
+Listen calls a callback function when a key is pressed.
+
+Simple example:
+
+    keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+    	if key.Code == keys.CtrlC {
+    		return true, nil // Stop listener by returning true on Ctrl+C
+    	}
+
+    	fmt.Println("\r" + key.String()) // Print every key press
+    	return false, nil // Return false to continue listening
+    })
+
+#### func  SimulateKeyPress
+
+```go
+func SimulateKeyPress(input ...interface{}) error
+```
+SimulateKeyPress simulate a key press. It can be used to mock user input and
+test your application.
 
 Example:
 
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
-
-#### func  StartListener
-
-```go
-func StartListener() error
-```
-StartListener starts the keyboard listener
-
-Example:
-
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
-
-#### func  StopListener
-
-```go
-func StopListener() error
-```
-StopListener stops the keyboard listener
-
-Example:
-
-    keyboard.StartListener()
-
-    for {
-      keyInfo, _ := keyboard.GetKey()
-      key := keyInfo.Code
-
-      if key == keys.CtrlC {
-        break
-      }
-
-      fmt.Println("\r", keyInfo.String())
-    }
-
-    keyboard.StopListener()
+    go func() {
+    	keyboard.SimulateKeyPress("Hello")             // Simulate key press for every letter in string
+    	keyboard.SimulateKeyPress(keys.Enter)          // Simulate key press for Enter
+    	keyboard.SimulateKeyPress(keys.CtrlShiftRight) // Simulate key press for Ctrl+Shift+Right
+    	keyboard.SimulateKeyPress('x')                 // Simulate key press for a single rune
+    	keyboard.SimulateKeyPress('x', keys.Down, 'a') // Simulate key presses for multiple inputs
+    }()
 
 ---
 
