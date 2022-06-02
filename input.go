@@ -173,12 +173,12 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 
 	// Check if it's a sequence
 	if k, ok := sequences[string(buf[:numBytes])]; ok {
-		return keys.Key(k), nil
+		return k, nil
 	}
 
 	hex := fmt.Sprintf("%x", buf[:numBytes])
 	if k, ok := hexCodes[hex]; ok {
-		return keys.Key(k), nil
+		return k, nil
 	}
 
 	// Check if the alt key is pressed.
