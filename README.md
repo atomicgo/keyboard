@@ -61,7 +61,7 @@ terminal application. It's crossplatform and keypresses can be combined.
     	key := keyInfo.Code
 
     	if key == keys.CtrlC {
-        break
+    		break
     	}
 
     	fmt.Println("\r", keyInfo.String())
