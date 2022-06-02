@@ -4,6 +4,7 @@
 package keyboard
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/containerd/console"
@@ -29,7 +30,8 @@ func initInput() error {
 func openInputTTY() (*os.File, error) {
 	f, err := os.OpenFile("CONIN$", os.O_RDWR, 0644)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open input TTY: %w", err)
 	}
+
 	return f, nil
 }

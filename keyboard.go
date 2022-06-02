@@ -1,6 +1,7 @@
 package keyboard
 
 import (
+	"fmt"
 	"os"
 
 	"atomicgo.dev/keyboard/keys"
@@ -38,7 +39,7 @@ func StartListener() error {
 	if con != nil {
 		err := con.SetRaw()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to set raw mode: %w", err)
 		}
 	}
 
@@ -71,7 +72,8 @@ func StopListener() error {
 	if con != nil {
 		err := con.Reset()
 		if err != nil {
-			return err
+
+			return fmt.Errorf("failed to reset console: %w", err)
 		}
 	}
 

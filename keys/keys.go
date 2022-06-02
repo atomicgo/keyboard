@@ -22,11 +22,14 @@ func (k Key) String() (str string) {
 	}
 	if k.Code == RuneKey {
 		str += string(k.Runes)
+
 		return str
 	} else if s, ok := keyNames[k.Code]; ok {
 		str += s
+
 		return str
 	}
+
 	return ""
 }
 
@@ -48,6 +51,7 @@ func (k KeyCode) String() (str string) {
 	if s, ok := keyNames[k]; ok {
 		return s
 	}
+
 	return ""
 }
 

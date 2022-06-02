@@ -1,7 +1,6 @@
 package keyboard
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"unicode/utf8"
@@ -168,7 +167,7 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	// Read
 	numBytes, err := input.Read(buf[:])
 	if err != nil {
-		return keys.Key{}, err
+		return keys.Key{}, fmt.Errorf("could not read input: %w", err)
 	}
 
 	// Check if it's a sequence
@@ -186,8 +185,9 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 		// Remove the initial escape sequence
 		c, _ := utf8.DecodeRune(buf[1:])
 		if c == utf8.RuneError {
-			return keys.Key{}, errors.New("could not decode rune after removing initial escape sequence")
+			return keys.Key{}, fmt.Errorf("could not decode rune after removing initial escape sequence")
 		}
+
 		return keys.Key{AltPressed: true, Code: keys.RuneKey, Runes: []rune{c}}, nil
 	}
 
@@ -195,17 +195,17 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	b := buf[:numBytes]
 
 	// Translate input into runes.
-	for i, w := 0, 0; i < len(b); i += w {
+	for i, w := 0, 0; i < len(b); i += w { //nolint:wastedassign
 		r, width := utf8.DecodeRune(b[i:])
 		if r == utf8.RuneError {
-			return keys.Key{}, errors.New("could not decode rune")
+			return keys.Key{}, fmt.Errorf("could not decode rune: %w", err)
 		}
 		runes = append(runes, r)
 		w = width
 	}
 
 	if len(runes) == 0 {
-		return keys.Key{}, errors.New("received 0 runes from input")
+		return keys.Key{}, fmt.Errorf("received 0 runes from input")
 	} else if len(runes) > 1 {
 		return keys.Key{Code: keys.RuneKey, Runes: runes}, nil
 	}
