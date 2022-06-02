@@ -1,6 +1,6 @@
 <h1 align="center">AtomicGo | keyboard</h1>
 
-<p align="center">
+<p align="center"> 
 
 <a href="https://github.com/atomicgo/keyboard/releases">
 <img src="https://img.shields.io/github/v/release/atomicgo/keyboard?style=flat-square" alt="Latest Release">
