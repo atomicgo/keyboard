@@ -15,23 +15,6 @@ var input = os.Stdin
 var inputTTY *os.File
 var mockChannel = make(chan keys.Key)
 
-// StartListener starts the keyboard listener
-//
-// Example:
-//  keyboard.StartListener()
-//
-//  for {
-//    keyInfo, _ := keyboard.GetKey()
-//    key := keyInfo.Code
-//
-//    if key == keys.CtrlC {
-//      break
-//    }
-//
-//    fmt.Println("\r", keyInfo.String())
-//  }
-//
-//  keyboard.StopListener()
 func startListener() error {
 	err := initInput()
 	if err != nil {
@@ -53,23 +36,6 @@ func startListener() error {
 	return nil
 }
 
-// StopListener stops the keyboard listener
-//
-// Example:
-//  keyboard.StartListener()
-//
-//  for {
-//    keyInfo, _ := keyboard.GetKey()
-//    key := keyInfo.Code
-//
-//    if key == keys.CtrlC {
-//      break
-//    }
-//
-//    fmt.Println("\r", keyInfo.String())
-//  }
-//
-//  keyboard.StopListener()
 func stopListener() error {
 	if con != nil {
 		err := con.Reset()
@@ -82,47 +48,18 @@ func stopListener() error {
 	return restoreInput()
 }
 
-// GetKey blocks until a key is pressed and returns the key info.
+// Listen calls a callback function when a key is pressed.
 //
-// Example:
-//  keyboard.StartListener()
+// Simple example:
+//  keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+//  	if key.Code == keys.CtrlC {
+//  		return true, nil // Stop listener by returning true on Ctrl+C
+//  	}
 //
-//  for {
-//    keyInfo, _ := keyboard.GetKey()
-//    key := keyInfo.Code
-//
-//    if key == keys.CtrlC {
-//      break
-//    }
-//
-//    fmt.Println("\r", keyInfo.String())
-//  }
-//
-//  keyboard.StopListener()
-// func GetKey() (keys.Key, error) {
-// 	return getKeyPress(inputTTY)
-// }
-
-func GetListener() (listener chan keys.Key, cancel chan bool) {
-	listener = make(chan keys.Key)
-	cancel = make(chan bool)
-
-	go func() {
-		Listen(func(keyInfo keys.Key) (stop bool, err error) {
-			select {
-			case <-cancel:
-				return true, nil
-			default:
-				listener <- keyInfo
-				return false, nil
-			}
-		})
-	}()
-
-	return
-}
-
-func Listen(onKeyPress func(keyInfo keys.Key) (stop bool, err error)) error {
+//  	fmt.Println("\r" + key.String()) // Print every key press
+//  	return false, nil // Return false to continue listening
+//  })
+func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	cancel := make(chan bool)
 
 	err := startListener()
@@ -169,8 +106,52 @@ func Listen(onKeyPress func(keyInfo keys.Key) (stop bool, err error)) error {
 	return nil
 }
 
-func MockKey(key keys.Key) error {
-	mockChannel <- key
+// SimulateKeyPress simulate a key press. It can be used to mock user input and test your application.
+//
+// Example:
+//  go func() {
+//  	keyboard.SimulateKeyPress("Hello")             // Simulate key press for every letter in string
+//  	keyboard.SimulateKeyPress(keys.Enter)          // Simulate key press for Enter
+//  	keyboard.SimulateKeyPress(keys.CtrlShiftRight) // Simulate key press for Ctrl+Shift+Right
+//  	keyboard.SimulateKeyPress('x')                 // Simulate key press for a single rune
+//  	keyboard.SimulateKeyPress('x', keys.Down, 'a') // Simulate key presses for multiple inputs
+//  }()
+func SimulateKeyPress(input ...interface{}) error {
+	for _, key := range input {
+		// Check if key is a keys.Key
+		if key, ok := key.(keys.Key); ok {
+			mockChannel <- key
+			return nil
+		}
+
+		// Check if key is a rune
+		if key, ok := key.(rune); ok {
+			mockChannel <- keys.Key{
+				Code:  keys.RuneKey,
+				Runes: []rune{key},
+			}
+			return nil
+		}
+
+		// Check if key is a string
+		if key, ok := key.(string); ok {
+			for _, r := range key {
+				mockChannel <- keys.Key{
+					Code:  keys.RuneKey,
+					Runes: []rune{r},
+				}
+			}
+			return nil
+		}
+
+		// Check if key is a KeyCode
+		if key, ok := key.(keys.KeyCode); ok {
+			mockChannel <- keys.Key{
+				Code: key,
+			}
+			return nil
+		}
+	}
 
 	return nil
 }
