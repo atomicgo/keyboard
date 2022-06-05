@@ -67,6 +67,7 @@ func stopListener() error {
 //  })
 func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	cancel := make(chan bool)
+	stopRoutine := false
 
 	go func() {
 		for {
@@ -76,7 +77,10 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 					return
 				}
 			case keyInfo := <-mockChannel:
-				onKeyPress(keyInfo)
+				stopRoutine, _ = onKeyPress(keyInfo)
+				if stopRoutine {
+					inputTTY.Close()
+				}
 			}
 		}
 	}()
@@ -86,7 +90,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		return err
 	}
 
-	for {
+	for !stopRoutine {
 		key, err := getKeyPress(inputTTY)
 		if err != nil {
 			return err
