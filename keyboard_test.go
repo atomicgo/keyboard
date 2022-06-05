@@ -12,6 +12,9 @@ var wg sync.WaitGroup
 
 func TestMocking(t *testing.T) {
 	wg.Add(1)
+	go func() {
+		keyboard.SimulateKeyPress(keys.Down)
+	}()
 
 	keyboard.Listen(func(key keys.Key) (stop bool, err error) {
 		if key.Code != keys.Down {
@@ -22,10 +25,6 @@ func TestMocking(t *testing.T) {
 
 		return true, nil
 	})
-
-	go func() {
-		keyboard.SimulateKeyPress(keys.Down)
-	}()
 
 	wg.Wait()
 }

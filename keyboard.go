@@ -68,11 +68,6 @@ func stopListener() error {
 func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	cancel := make(chan bool)
 
-	err := startListener()
-	if err != nil {
-		return err
-	}
-
 	go func() {
 		for {
 			select {
@@ -85,6 +80,11 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 			}
 		}
 	}()
+
+	err := startListener()
+	if err != nil {
+		return err
+	}
 
 	for {
 		key, err := getKeyPress(inputTTY)
