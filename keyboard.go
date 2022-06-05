@@ -80,6 +80,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 				stopRoutine, _ = onKeyPress(keyInfo)
 				if stopRoutine {
 					inputTTY.Close()
+					onKeyPress(keys.Key{Code: keys.Null})
 				}
 			}
 		}
@@ -94,6 +95,10 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		key, err := getKeyPress(inputTTY)
 		if err != nil {
 			return err
+		}
+
+		if key.Code == keys.Null {
+			return nil
 		}
 
 		stop, err := onKeyPress(key)
