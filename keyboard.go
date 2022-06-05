@@ -3,6 +3,7 @@ package keyboard
 import (
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/containerd/console"
 
@@ -79,8 +80,8 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 			case keyInfo := <-mockChannel:
 				stopRoutine, _ = onKeyPress(keyInfo)
 				if stopRoutine {
+					closeInput()
 					inputTTY.Close()
-					onKeyPress(keys.Key{Code: keys.Null})
 				}
 			}
 		}
@@ -92,12 +93,13 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	}
 
 	for !stopRoutine {
-		key, err := getKeyPress(inputTTY)
+		key, err := getKeyPress()
 		if err != nil {
 			return err
 		}
 
-		if key.Code == keys.Null {
+		// check if returned key is empty
+		if reflect.DeepEqual(key, keys.Key{}) {
 			return nil
 		}
 

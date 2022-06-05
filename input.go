@@ -3,7 +3,6 @@ package keyboard
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"unicode/utf8"
 
@@ -163,17 +162,19 @@ var hexCodes = map[string]keys.Key{
 	"1b4f44": {Code: keys.Left, AltPressed: false},
 }
 
-func getKeyPress(input io.Reader) (keys.Key, error) {
+func getKeyPress() (keys.Key, error) {
 	var buf [256]byte
 
+	fmt.Println("a")
 	// Read
-	numBytes, err := input.Read(buf[:])
+	numBytes, err := inputTTY.Read(buf[:])
 	if err != nil {
 		if errors.Is(err, os.ErrClosed) {
 			return keys.Key{}, nil
 		}
 		return keys.Key{}, fmt.Errorf("could not read stdin: %w", err)
 	}
+	fmt.Println("b")
 
 	// Check if it's a sequence
 	if k, ok := sequences[string(buf[:numBytes])]; ok {
