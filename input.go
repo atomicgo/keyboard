@@ -1,8 +1,10 @@
 package keyboard
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"unicode/utf8"
 
 	"atomicgo.dev/keyboard/internal"
@@ -167,6 +169,9 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	// Read
 	numBytes, err := input.Read(buf[:])
 	if err != nil {
+		if errors.Is(err, os.ErrClosed) {
+			return keys.Key{}, nil
+		}
 		return keys.Key{}, fmt.Errorf("could not read stdin: %w", err)
 	}
 
