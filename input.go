@@ -167,7 +167,7 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	// Read
 	numBytes, err := input.Read(buf[:])
 	if err != nil {
-		return keys.Key{}, fmt.Errorf("could not read input: %w", err)
+		return keys.Key{}, fmt.Errorf("could not read stdin: %w", err)
 	}
 
 	// Check if it's a sequence
@@ -194,7 +194,7 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	var runes []rune
 	b := buf[:numBytes]
 
-	// Translate input into runes.
+	// Translate stdin into runes.
 	for i, w := 0, 0; i < len(b); i += w { //nolint:wastedassign
 		r, width := utf8.DecodeRune(b[i:])
 		if r == utf8.RuneError {
@@ -205,7 +205,7 @@ func getKeyPress(input io.Reader) (keys.Key, error) {
 	}
 
 	if len(runes) == 0 {
-		return keys.Key{}, fmt.Errorf("received 0 runes from input")
+		return keys.Key{}, fmt.Errorf("received 0 runes from stdin")
 	} else if len(runes) > 1 {
 		return keys.Key{Code: keys.RuneKey, Runes: runes}, nil
 	}
