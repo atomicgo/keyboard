@@ -11,14 +11,20 @@ import (
 
 var windowsStdin *os.File
 var con console.Console
-var input = os.Stdin
+var stdin = os.Stdin
 var inputTTY *os.File
 var mockChannel = make(chan keys.Key)
+
+var mocking = false
 
 func startListener() error {
 	err := initInput()
 	if err != nil {
 		return err
+	}
+
+	if mocking {
+		return nil
 	}
 
 	if con != nil {
@@ -106,7 +112,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	return nil
 }
 
-// SimulateKeyPress simulate a key press. It can be used to mock user input and test your application.
+// SimulateKeyPress simulate a key press. It can be used to mock user stdin and test your application.
 //
 // Example:
 //  go func() {

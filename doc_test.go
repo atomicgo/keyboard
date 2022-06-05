@@ -7,7 +7,7 @@ import (
 	"atomicgo.dev/keyboard/keys"
 )
 
-func ExampleSimple() {
+func ExampleListen_simple() {
 	Listen(func(key keys.Key) (stop bool, err error) {
 		if key.Code == keys.CtrlC {
 			return true, nil // Stop listener by returning true on Ctrl+C
@@ -18,7 +18,7 @@ func ExampleSimple() {
 	})
 }
 
-func ExampleAdvanced() {
+func ExampleListen_advanced() {
 	// Stop keyboard listener on Escape key press or CTRL+C.
 	// Exit application on "q" key press.
 	// Print every rune key press.
@@ -41,7 +41,7 @@ func ExampleAdvanced() {
 	})
 }
 
-func ExampleMocking() {
+func ExampleSimulateKeyPress() {
 	go func() {
 		SimulateKeyPress("Hello")             // Simulate key press for every letter in string
 		SimulateKeyPress(keys.Enter)          // Simulate key press for Enter

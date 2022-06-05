@@ -17,7 +17,7 @@ func restoreInput() error {
 }
 
 func initInput() error {
-	c, err := console.ConsoleFromFile(input)
+	c, err := console.ConsoleFromFile(stdin)
 	if err != nil {
 		return err
 	}
