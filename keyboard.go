@@ -3,7 +3,6 @@ package keyboard
 import (
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/containerd/console"
 
@@ -89,7 +88,9 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 
 	err := startListener()
 	if err != nil {
-		return err
+		if err.Error() != "provided file is not a console" {
+			return err
+		}
 	}
 
 	for !stopRoutine {
@@ -99,9 +100,9 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		}
 
 		// check if returned key is empty
-		if reflect.DeepEqual(key, keys.Key{}) {
-			return nil
-		}
+		// if reflect.DeepEqual(key, keys.Key{}) {
+		// 	return nil
+		// }
 
 		stop, err := onKeyPress(key)
 		if err != nil {
@@ -109,6 +110,8 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		}
 
 		if stop {
+			closeInput()
+			inputTTY.Close()
 			break
 		}
 	}

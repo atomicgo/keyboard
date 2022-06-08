@@ -174,8 +174,11 @@ func getKeyPress() (keys.Key, error) {
 
 		if err.Error() == "EOF" {
 			return keys.Key{}, nil
+		} else if err.Error() == "invalid argument" {
+			return keys.Key{}, nil
 		}
-		return keys.Key{}, fmt.Errorf("could not read stdin: %w", err)
+
+		return keys.Key{}, nil
 	}
 
 	// Check if it's a sequence
