@@ -190,7 +190,6 @@ func getKeyPress() (keys.Key, error) {
 	}
 
 	hex := fmt.Sprintf("%x", buf[:numBytes])
-	fmt.Println(hex)
 	if k, ok := hexCodes[hex]; ok {
 		return k, nil
 	}
