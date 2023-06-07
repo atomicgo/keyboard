@@ -1,4 +1,4 @@
-name: tweet-release
+name: Tweet release
 
 # Listen to the `release` event
 on:
