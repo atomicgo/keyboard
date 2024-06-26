@@ -11,6 +11,7 @@ test:
 
 lint:
 	@echo "# Linting..."
-	@golangci-lint run
-	@echo "## Fixing whitespaces...."
+	@echo "## Fixing whitespaces..."
 	@wsl --allow-cuddle-declarations --force-err-cuddling --fix ./...
+	@echo "## Running golangci-lint..."
+	@golangci-lint run
