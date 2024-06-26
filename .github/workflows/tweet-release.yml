@@ -1,3 +1,10 @@
+##################################################################
+#                          IMPORTANT NOTE                        #
+#                                                                #
+# This file is synced with https://github.com/atomicgo/template  #
+# Please make changes there.                                     #
+##################################################################
+
 name: Tweet release
 
 # Listen to the `release` event
@@ -13,11 +20,12 @@ jobs:
         # We don't want to tweet if the repository is not a public one
         if: ${{ !github.event.repository.private }}
         with:
-          tweet-message: "New ${{ github.event.repository.name }} release: ${{ github.event.release.tag_name }}! 🎉
-          
-           Try it out: ${{ github.event.release.html_url }}
-           
-           #go #golang #opensource #library #release #atomicgo"
+          tweet-message:
+            "New ${{ github.event.repository.name }} release: ${{ github.event.release.tag_name }}! 🎉
+
+            Try it out: ${{ github.event.release.html_url }}
+
+            #go #golang #opensource #library #release #atomicgo"
         env:
           TWITTER_CONSUMER_API_KEY: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
           TWITTER_CONSUMER_API_SECRET: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}

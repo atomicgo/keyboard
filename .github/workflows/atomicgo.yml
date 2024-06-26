@@ -1,8 +1,15 @@
+##################################################################
+#                          IMPORTANT NOTE                        #
+#                                                                #
+# This file is synced with https://github.com/atomicgo/template  #
+# Please make changes there.                                     #
+##################################################################
+
 name: AtomicGo
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   docs:

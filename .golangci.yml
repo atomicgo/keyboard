@@ -1,3 +1,10 @@
+##################################################################
+#                          IMPORTANT NOTE                        #
+#                                                                #
+# This file is synced with https://github.com/atomicgo/template  #
+# Please make changes there.                                     #
+##################################################################
+
 run:
   # Timeout for analysis, e.g. 30s, 5m.
   # Default: 1m

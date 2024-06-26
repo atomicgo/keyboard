@@ -1,6 +1,13 @@
+##################################################################
+#                          IMPORTANT NOTE                        #
+#                                                                #
+# This file is synced with https://github.com/atomicgo/template  #
+# Please make changes there.                                     #
+##################################################################
+
 name: Code Analysis
 
-on: [ push, pull_request ]
+on: [push, pull_request]
 
 jobs:
   lint:
@@ -12,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 'stable'
+          go-version: "stable"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3

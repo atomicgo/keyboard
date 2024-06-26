@@ -1,3 +1,10 @@
+##################################################################
+#                          IMPORTANT NOTE                        #
+#                                                                #
+# This file is synced with https://github.com/atomicgo/template  #
+# Please make changes there.                                     #
+##################################################################
+
 changelog:
   exclude:
     labels:
@@ -17,3 +24,4 @@ changelog:
     - title: Other Changes
       labels:
         - "*"
+
