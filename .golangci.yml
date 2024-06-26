@@ -138,6 +138,10 @@ linters-settings:
     line-length: 140
     tab-width: 1
 
+  exhaustive:
+    check-generated: false
+    default-signifies-exhaustive: true
+
   varnamelen:
     ignore-type-assert-ok: true # ignore "ok" variables
     ignore-map-index-ok: true
@@ -153,6 +157,14 @@ linters-settings:
       - c int
       - j int
       - T any
+      - a any
+      - b any
+      - c any
+      - d any
+      - data any
+      - n any
+      - f func()
+      - cb func()
       - t testing.T
       - b testing.B
 
