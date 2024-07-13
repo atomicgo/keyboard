@@ -14,6 +14,6 @@ lint:
 	@echo "## Go mod tidy..."
 	@go mod tidy
 	@echo "## Fixing whitespaces..."
-	@wsl --allow-cuddle-declarations --force-err-cuddling --fix ./...
+	@wsl --allow-cuddle-declarations --force-err-cuddling --force-case-trailing-whitespace 3 --fix ./...
 	@echo "## Running golangci-lint..."
 	@golangci-lint run

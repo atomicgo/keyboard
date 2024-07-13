@@ -39,7 +39,6 @@ linters:
     - funlen # check for long functions
     - gci # controls Go package import order and makes it always deterministic
     - gocheckcompilerdirectives # checks that go compiler directive comments (//go:) are valid
-    - gochecknoglobals # checks that no globals are used
     - gochecksumtype # exhaustiveness checks on Go "sum types"
     - gocognit # check for high cognitive complexity
     - gocritic # Go source code linter that provides a ton of rules
@@ -122,6 +121,7 @@ linters:
     - gomnd # deprecated
     - mnd # too many detections
     - cyclop # covered by gocyclo
+    - gochecknoglobals # there are many valid reasons for global variables, depending on the project
 
 linters-settings:
   wsl:
@@ -147,26 +147,30 @@ linters-settings:
     ignore-map-index-ok: true
     ignore-chan-recv-ok: true
     ignore-decls:
-      - n int
-      - x int
-      - y int
-      - z int
-      - i int
-      - a int
-      - b int
-      - c int
-      - j int
-      - T any
-      - a any
-      - b any
-      - c any
-      - d any
-      - data any
-      - n any
-      - f func()
-      - cb func()
-      - t testing.T
-      - b testing.B
+      - n int # generic number
+      - x int # generic number (e.g. coordinate)
+      - y int # generic number (e.g. coordinate)
+      - z int # generic number (e.g. coordinate)
+      - i int # generic number
+      - a int # generic number
+      - r int # generic number (e.g. red or radius)
+      - g int # generic number (e.g. green)
+      - b int # generic number (e.g. blue)
+      - c int # generic number (e.g. count)
+      - j int # generic number (e.g. index)
+      - T any # generic type
+      - a any # generic any (e.g. data)
+      - b any # generic any (e.g. body)
+      - c any # generic any
+      - d any # generic any (e.g. data)
+      - data any # generic data
+      - n any # generic any
+      - t time.Time # often used as a variable name
+      - f func() # often used as a callback variable name
+      - cb func() # often used as a callback variable name
+      - t testing.T # default testing.T variable name
+      - b testing.B # default testing.B variable name
+      - sb strings.Builder # often used as a variable name
 
 issues:
   exclude-rules:
