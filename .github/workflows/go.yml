@@ -1,33 +1,33 @@
-##################################################################
-#                          IMPORTANT NOTE                        #
-#                                                                #
-# This file is synced with https://github.com/atomicgo/template  #
-# Please make changes there.                                     #
-##################################################################
+# ┌───────────────────────────────────────────────────────────────────┐
+# │                                                                   │
+# │                          IMPORTANT NOTE                           │
+# │                                                                   │
+# │   This file is synced with https://github.com/atomicgo/template   │
+# │                                                                   │
+# │        Please apply all changes to the template repository        │
+# │                                                                   │
+# └───────────────────────────────────────────────────────────────────┘
 
 name: Go
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test Go code
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          go-version: ^1
-        id: go
+          go-version: stable
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get dependencies
         run: go get -v -t -d ./...

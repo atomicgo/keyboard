@@ -1,9 +1,12 @@
-##################################################################
-#                          IMPORTANT NOTE                        #
-#                                                                #
-# This file is synced with https://github.com/atomicgo/template  #
-# Please make changes there.                                     #
-##################################################################
+# ┌───────────────────────────────────────────────────────────────────┐
+# │                                                                   │
+# │                          IMPORTANT NOTE                           │
+# │                                                                   │
+# │   This file is synced with https://github.com/atomicgo/template   │
+# │                                                                   │
+# │        Please apply all changes to the template repository        │
+# │                                                                   │
+# └───────────────────────────────────────────────────────────────────┘
 
 test:
 	@echo "# Running tests..."

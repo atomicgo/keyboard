@@ -1,24 +1,174 @@
-##################################################################
-#                          IMPORTANT NOTE                        #
-#                                                                #
-# This file is synced with https://github.com/atomicgo/template  #
-# Please make changes there.                                     #
-##################################################################
+# ┌───────────────────────────────────────────────────────────────────┐
+# │                                                                   │
+# │                          IMPORTANT NOTE                           │
+# │                                                                   │
+# │   This file is synced with https://github.com/atomicgo/template   │
+# │                                                                   │
+# │        Please apply all changes to the template repository        │
+# │                                                                   │
+# └───────────────────────────────────────────────────────────────────┘
 
 name: AtomicGo
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  docs:
-    if: "!contains(github.event.head_commit.message, 'autoupdate')"
-    runs-on: ubuntu-latest
+  test:
+    name: Test Go Code
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - name: Update Docs
-        uses: atomicgo/ci@main
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          TERM: xterm-256color
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: stable
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Get dependencies
+        run: go get -v -t -d ./...
+
+      - name: Build
+        run: go build -v .
+
+      - name: Test
+        run: go test -coverprofile="coverage.txt" -covermode=atomic -v -p 1 .
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+
+  build:
+    name: Build AtomicGo Package
+    runs-on: ubuntu-latest
+    needs: test
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download assets
+        run: |
+          mkdir -p .templates
+          wget https://raw.githubusercontent.com/atomicgo/atomicgo/main/templates/example.gotxt -O .templates/example.gotxt
+          wget https://raw.githubusercontent.com/atomicgo/atomicgo/main/templates/readme.md -O .templates/readme.md
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: stable
+
+      - name: Install Go tools
+        run: |
+          go install github.com/robertkrimen/godocdown/godocdown@latest
+          go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+          go install github.com/caarlos0/svu@latest
+
+      - name: Set up Git configuration
+        run: |
+          REPO_FULLNAME="${{ github.repository }}"
+          echo "::group::Setup git"
+          git config --global --add safe.directory /github/workspace
+
+          echo "::notice::Login into git"
+          git config --global user.email "git@marvinjwendt.com"
+          git config --global user.name "MarvinJWendt"
+
+          echo "::notice::Ignore workflow files (we may not touch them)"
+          git update-index --assume-unchanged .github/workflows/*
+
+      - name: Generate README.md
+        run: |
+          echo "::group::Generate README.md"
+          FILE=./.github/atomicgo/custom_readme
+          INCLUDE_UNEXPORTED=./.github/atomicgo/include_unexported
+          if test -f "$FILE"; then
+            echo "::notice::.github/custom_readme is present. Not generating a new readme."
+          else
+            echo "::notice::Running Godocdown"
+            $(go env GOPATH)/bin/godocdown -template ./.templates/readme.md >README.md
+            echo "::notice::Running gomarkdoc"
+            GOMARKDOC_FLAGS="--template-file example=./.templates/example.gotxt"
+            if test -f "$INCLUDE_UNEXPORTED"; then
+              GOMARKDOC_FLAGS+=" -u"
+            fi
+
+            $(go env GOPATH)/bin/gomarkdoc $GOMARKDOC_FLAGS --repository.url "https://github.com/${{ github.repository }}" --repository.default-branch main --repository.path / -e -o README.md .
+          fi
+          echo "::endgroup::"
+
+      - name: Run custom CI system (bash equivalent of main.go)
+        run: |
+          echo "::group::Run custom CI system"
+          echo "::notice::Counting unit tests"
+          unittest_count=$(go test -v -p 1 ./... | tee /dev/tty | grep -c "RUN")
+
+          echo "::notice::Replacing badge in README.md"
+          sed -i 's|<img src="https://img.shields.io/badge/Unit_Tests-[^"]*-magenta?style=flat-square"|<img src="https://img.shields.io/badge/Unit_Tests-'$unittest_count'-magenta?style=flat-square"|g' README.md
+          echo "::endgroup::"
+
+      - name: Run go mod tidy
+        run: |
+          echo "::group::Run go mod tidy"
+          git checkout go.mod # reset go.mod file
+          git checkout go.sum # reset go.sum file
+          go mod tidy
+          echo "::endgroup::"
+
+      - name: Stage and commit changes
+        run: |
+          echo "::group::Stage and commit changes"
+          git add .
+          git commit -m "docs: autoupdate" || true
+          echo "::endgroup::"
+
+      - name: Push changes
+        run: |
+          echo "::notice::Pushing changes to origin"
+          git push -u origin main
+
+      - name: Get current version
+        id: current_version
+        run: |
+          echo "current_version=$(svu current)" >> $GITHUB_ENV
+          echo "::notice::Current version is $(svu current)"
+
+      - name: Calculate next version
+        id: next_version
+        run: |
+          echo "next_version=$(svu next)" >> $GITHUB_ENV
+          echo "::notice::Next version is $(svu next)"
+
+      - name: Check if release is needed
+        id: check_release
+        run: |
+          echo "release_needed=$( [ '${{ env.current_version }}' != '${{ env.next_version }}' ] && echo true || echo false )" >> $GITHUB_ENV
+
+      - name: Create tag
+        if: env.release_needed == 'true'
+        run: |
+          git tag -a ${{ env.next_version }} -m "Release v${{ env.next_version }}"
+          git push origin ${{ env.next_version }}
+          sleep 5 # sleep for 5 seconds to allow GitHub to process the tag
+
+      - name: Release
+        if: env.release_needed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
+          tag_name: ${{ env.next_version }}
