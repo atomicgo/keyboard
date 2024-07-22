@@ -3,6 +3,7 @@ package keyboard
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	"github.com/containerd/console"
 
@@ -68,7 +69,7 @@ func stopListener() error {
 //	})
 func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	cancel := make(chan bool)
-	stopRoutine := false
+	stopRoutine := atomic.Bool{}
 
 	go func() {
 		for {
@@ -78,11 +79,12 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 					return
 				}
 			case keyInfo := <-mockChannel:
-				stopRoutine, _ = onKeyPress(keyInfo)
-				if stopRoutine {
+				shouldStop, _ := onKeyPress(keyInfo)
+				if shouldStop {
 					closeInput()
 					inputTTY.Close()
 				}
+				stopRoutine.Store(shouldStop)
 			}
 		}
 	}()
@@ -94,7 +96,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		}
 	}
 
-	for !stopRoutine {
+	for !stopRoutine.Load() {
 		key, err := getKeyPress()
 		if err != nil {
 			return err
