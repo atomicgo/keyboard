@@ -53,7 +53,6 @@ linters:
     - inamedparam # reports interfaces with unnamed method parameters
     - interfacebloat # check for large interfaces
     - intrange # find places where for loops could make use of an integer range
-    - ireturn # Accept Interfaces, Return Concrete Types.
     - lll # check for long lines
     - maintidx # measures the maintainability index of each function
     - mirror # reports wrong mirror patterns of bytes/strings usage
@@ -123,6 +122,7 @@ linters:
     - mnd # too many detections
     - cyclop # covered by gocyclo
     - gochecknoglobals # there are many valid reasons for global variables, depending on the project
+    - ireturn # there are too many exceptions
 
 linters-settings:
   wsl:
@@ -138,6 +138,9 @@ linters-settings:
   lll:
     line-length: 140
     tab-width: 1
+
+  nlreturn:
+    block-size: 2
 
   exhaustive:
     check-generated: false

@@ -8,46 +8,24 @@
 # │                                                                   │
 # └───────────────────────────────────────────────────────────────────┘
 
-# Binaries
-*.exe
-*.exe~
-*.so
+version: "3"
 
-# Go specifics
+tasks:
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+  tdd:
+    desc: Test Driven Development - Watch tests
+    watch: true
+    sources:
+      - "**/*.go"
+    cmds:
+      - go test ./...
 
-## Test binary, built with `go test -c`
-*.test
-
-## Output of the go coverage tool
-*.out
-
-## Vendored dependencies
-vendor/
-
-# IDEs
-
-## IntelliJ
-.idea
-*.iml
-out
-gen
-
-## Visual Studio Code
-.vscode
-*.code-workspace
-
-# Operating System Files
-
-## macOS
-.DS_Store
-
-# Other 
-
-## Experimenting folder
-experimenting
-
-## CI assets
-.templates
-
-## Taskfile
-.task
+  lint:
+    desc: Run all linters
+    cmds:
+      - go mod tidy
+      - wsl --allow-cuddle-declarations --force-err-cuddling --force-case-trailing-whitespace 3 --fix ./...
+      - golangci-lint run
