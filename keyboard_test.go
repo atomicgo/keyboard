@@ -1,6 +1,7 @@
 package keyboard_test
 
 import (
+	"sync"
 	"testing"
 
 	"atomicgo.dev/keyboard"
@@ -18,9 +19,13 @@ func TestMocking(t *testing.T) {
 
 	var aPressed, bPressed, cPressed, enterPressed bool
 	var keyList []keys.Key
+	var lock = sync.Mutex{}
 
 	err := keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+		lock.Lock()
 		keyList = append(keyList, key)
+		lock.Unlock()
+
 		switch key.Code {
 		case keys.RuneKey:
 			switch key.String() {
