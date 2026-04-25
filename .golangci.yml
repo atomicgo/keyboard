@@ -56,7 +56,7 @@ linters:
   exclusions:
     generated: strict
     paths:
-      - '(^|/)(doc|examples)_test\.go$'
+      - '(^|/)examples_test\.go$'
     rules:
       - path: "_test(_[^/]+)?\\.go"
         linters:
