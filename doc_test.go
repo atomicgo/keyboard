@@ -14,7 +14,8 @@ func ExampleListen_simple() {
 		}
 
 		fmt.Println("\r" + key.String()) // Print every key press
-		return false, nil                // Return false to continue listening
+
+		return false, nil // Return false to continue listening
 	})
 }
 
@@ -32,7 +33,9 @@ func ExampleListen_advanced() {
 				fmt.Println("\rQuitting application")
 				os.Exit(0) // Exit application
 			}
+
 			fmt.Printf("\rYou pressed the rune key: %s\n", key)
+
 		default:
 			fmt.Printf("\rYou pressed: %s\n", key)
 		}
@@ -58,6 +61,7 @@ func ExampleSimulateKeyPress() {
 		}
 
 		fmt.Println("\r" + key.String()) // Print every key press
-		return false, nil                // Return false to continue listening
+
+		return false, nil // Return false to continue listening
 	})
 }

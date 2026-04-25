@@ -26,20 +26,31 @@ func TestMocking(t *testing.T) {
 			switch key.String() {
 			case "a":
 				println("a pressed")
+
 				aPressed = true
+
 				return false, nil
+
 			case "b":
 				println("b pressed")
+
 				bPressed = true
+
 				return false, nil
+
 			case "c":
 				println("c pressed")
+
 				cPressed = true
+
 				return false, nil
 			}
+
 		case keys.Enter:
 			println("enter pressed")
+
 			enterPressed = true
+
 			return true, nil
 		}
 

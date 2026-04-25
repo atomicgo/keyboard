@@ -214,6 +214,7 @@ func getKeyPress() (keys.Key, error) {
 		if r == utf8.RuneError {
 			return keys.Key{}, fmt.Errorf("could not decode rune: %w", err)
 		}
+
 		runes = append(runes, r)
 		w = width
 	}

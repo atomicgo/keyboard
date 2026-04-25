@@ -21,6 +21,7 @@ func (k Key) String() (str string) {
 	if k.AltPressed {
 		str += "alt+"
 	}
+
 	if k.Code == RuneKey {
 		str += string(k.Runes)
 

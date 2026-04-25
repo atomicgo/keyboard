@@ -46,7 +46,6 @@ func stopListener() error {
 	if con != nil {
 		err := con.Reset()
 		if err != nil {
-
 			return fmt.Errorf("failed to reset console: %w", err)
 		}
 	}
@@ -77,6 +76,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 				if c {
 					return
 				}
+
 			case keyInfo := <-mockChannel:
 				stopRoutine, _ = onKeyPress(keyInfo)
 				if stopRoutine {
@@ -113,6 +113,7 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		if stop {
 			closeInput()
 			inputTTY.Close()
+
 			break
 		}
 	}
@@ -152,6 +153,7 @@ func SimulateKeyPress(input ...interface{}) error {
 				Code:  keys.RuneKey,
 				Runes: []rune{key},
 			}
+
 			return nil
 		}
 
@@ -163,6 +165,7 @@ func SimulateKeyPress(input ...interface{}) error {
 					Runes: []rune{r},
 				}
 			}
+
 			return nil
 		}
 
@@ -171,6 +174,7 @@ func SimulateKeyPress(input ...interface{}) error {
 			mockChannel <- keys.Key{
 				Code: key,
 			}
+
 			return nil
 		}
 	}
