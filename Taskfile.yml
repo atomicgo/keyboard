@@ -57,12 +57,22 @@ tasks:
       - go test -race ./...
 
   lint:
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - .golangci.yml
     desc: Run all linters
     cmds:
       - golangci-lint run
 
   lint:fix:
     desc: Run all linters and apply automatic fixes
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - .golangci.yml
     cmds:
       - go mod tidy
       - golangci-lint run --fix
