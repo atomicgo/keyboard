@@ -1,0 +1,17 @@
+{{- spacer -}}
+
+{{- template "doc" .Doc -}}
+{{- spacer -}}
+
+{{- codeBlock "go" .Code -}}
+{{- spacer -}}
+
+{{- if .HasOutput -}}
+
+	{{- header 4 "Output" -}}
+	{{- spacer -}}
+
+	{{- codeBlock "" .Output -}}
+	{{- spacer -}}
+    
+{{- end -}}
