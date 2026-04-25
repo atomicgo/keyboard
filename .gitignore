@@ -32,9 +32,10 @@ vendor/
 out
 gen
 
-## Visual Studio Code
+## Visual Studio Code & Forks
 .vscode
 *.code-workspace
+.cursor
 
 # Operating System Files
 
