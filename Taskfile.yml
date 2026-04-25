@@ -18,6 +18,24 @@ tasks:
     cmds:
       - go test -race ./...
 
+  release:patch:
+    desc: Create and push the next patch release tag
+    deps: [test]
+    cmds:
+      - bash scripts/release-tag.sh --patch
+
+  release:minor:
+    desc: Create and push the next minor release tag
+    deps: [test]
+    cmds:
+      - bash scripts/release-tag.sh --minor
+
+  release:major:
+    desc: Create and push the next major release tag
+    deps: [test]
+    cmds:
+      - bash scripts/release-tag.sh --major
+
   benchmark:
     desc: Run all benchmarks
     aliases: [bench]
