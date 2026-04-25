@@ -9,11 +9,32 @@ import (
 )
 
 func TestMocking(t *testing.T) {
+	simulateErrs := make(chan error, 4)
+
 	go func() {
-		keyboard.SimulateKeyPress('a')
-		keyboard.SimulateKeyPress("b")
-		keyboard.SimulateKeyPress("c")
-		keyboard.SimulateKeyPress(keys.Enter)
+		defer close(simulateErrs)
+
+		if err := keyboard.SimulateKeyPress('a'); err != nil {
+			simulateErrs <- err
+
+			return
+		}
+
+		if err := keyboard.SimulateKeyPress("b"); err != nil {
+			simulateErrs <- err
+
+			return
+		}
+
+		if err := keyboard.SimulateKeyPress("c"); err != nil {
+			simulateErrs <- err
+
+			return
+		}
+
+		if err := keyboard.SimulateKeyPress(keys.Enter); err != nil {
+			simulateErrs <- err
+		}
 	}()
 
 	var aPressed, bPressed, cPressed, enterPressed bool
@@ -58,6 +79,10 @@ func TestMocking(t *testing.T) {
 	})
 
 	testza.AssertNoError(t, err)
+
+	for err := range simulateErrs {
+		t.Errorf("failed to simulate key press: %v", err)
+	}
 
 	testza.AssertTrue(t, aPressed, "A | %s", keyList)
 	testza.AssertTrue(t, bPressed, "B | %s", keyList)

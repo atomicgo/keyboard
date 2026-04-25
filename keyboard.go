@@ -9,7 +9,6 @@ import (
 	"atomicgo.dev/keyboard/keys"
 )
 
-var windowsStdin *os.File
 var con console.Console
 var stdin = os.Stdin
 var inputTTY *os.File
@@ -28,8 +27,7 @@ func startListener() error {
 	}
 
 	if con != nil {
-		err := con.SetRaw()
-		if err != nil {
+		if err = con.SetRaw(); err != nil {
 			return fmt.Errorf("failed to set raw mode: %w", err)
 		}
 	}
@@ -81,7 +79,8 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 				stopRoutine, _ = onKeyPress(keyInfo)
 				if stopRoutine {
 					closeInput()
-					inputTTY.Close()
+
+					_ = inputTTY.Close()
 				}
 			}
 		}
@@ -95,9 +94,9 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	}
 
 	for !stopRoutine {
-		key, err := getKeyPress()
-		if err != nil {
-			return err
+		key, keyErr := getKeyPress()
+		if keyErr != nil {
+			return keyErr
 		}
 
 		// check if returned key is empty
@@ -105,14 +104,15 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		// 	return nil
 		// }
 
-		stop, err := onKeyPress(key)
-		if err != nil {
-			return err
+		stop, stopErr := onKeyPress(key)
+		if stopErr != nil {
+			return stopErr
 		}
 
 		if stop {
 			closeInput()
-			inputTTY.Close()
+
+			_ = inputTTY.Close()
 
 			break
 		}

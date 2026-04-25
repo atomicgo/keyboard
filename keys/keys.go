@@ -1,3 +1,4 @@
+// Package keys provides keyboard key types and constants.
 package keys
 
 import "atomicgo.dev/keyboard/internal"
