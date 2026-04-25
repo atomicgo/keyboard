@@ -1,0 +1,32 @@
+# ┌───────────────────────────────────────────────────────────────────┐
+# │                                                                   │
+# │                          IMPORTANT NOTE                           │
+# │                                                                   │
+# │   This file is synced with https://github.com/atomicgo/template   │
+# │                                                                   │
+# │        Please apply all changes to the template repository        │
+# │                                                                   │
+# └───────────────────────────────────────────────────────────────────┘
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release pushed tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
