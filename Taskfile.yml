@@ -60,5 +60,10 @@ tasks:
     desc: Run all linters
     cmds:
       - go mod tidy
-      - wsl --allow-cuddle-declarations --force-err-cuddling --force-case-trailing-whitespace 3 --fix ./...
       - golangci-lint run
+
+  lint:fix:
+    desc: Run all linters and apply automatic fixes
+    cmds:
+      - go mod tidy
+      - golangci-lint run --fix
