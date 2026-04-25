@@ -8,47 +8,31 @@
 # │                                                                   │
 # └───────────────────────────────────────────────────────────────────┘
 
-# Binaries
+# Build artifacts and binaries
 *.exe
 *.exe~
 *.so
-
-# Go specifics
-
-## Test binary, built with `go test -c`
 *.test
 
-## Output of the go coverage tool
+# Coverage
 *.out
 
-## Vendored dependencies
+# Dependencies
 vendor/
 
-# IDEs
-
-## IntelliJ
-.idea
-*.iml
-out
-gen
-
-## Visual Studio Code & Forks
-.vscode
+# Editors and IDEs
 *.code-workspace
+*.iml
 .cursor
+.idea
+.vscode
+gen
+out
 
-# Operating System Files
-
-## macOS
+# Operating system files
 .DS_Store
 
-# Other 
-
-## Experimenting folder
-experimenting
-
-## CI assets
-.templates
-
-## Taskfile
+# Project-specific files
 .task
+.templates
+experimenting
