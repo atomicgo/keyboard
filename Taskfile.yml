@@ -15,6 +15,10 @@ tasks:
     desc: Run all tests
     env:
       CGO_ENABLED: 1
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
     cmds:
       - go test -race ./...
 
