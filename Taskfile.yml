@@ -59,7 +59,6 @@ tasks:
   lint:
     desc: Run all linters
     cmds:
-      - go mod tidy
       - golangci-lint run
 
   lint:fix:
