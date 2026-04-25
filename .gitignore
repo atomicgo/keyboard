@@ -13,6 +13,7 @@
 *.exe~
 *.so
 *.test
+.templates/
 
 # Coverage
 *.out
