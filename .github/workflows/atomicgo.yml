@@ -93,10 +93,29 @@ jobs:
       - name: Generate README.md
         run: |
           echo "::group::Generate README.md"
-          FILE=./.github/atomicgo/custom_readme
+          SYNCIGNORE=./.syncignore
           INCLUDE_UNEXPORTED=./.github/atomicgo/include_unexported
-          if test -f "$FILE"; then
-            echo "::notice::.github/custom_readme is present. Not generating a new readme."
+          README_IGNORED=false
+
+          if test -f "$SYNCIGNORE"; then
+            while IFS= read -r entry || test -n "$entry"; do
+              entry="${entry%$'\r'}"
+              entry="${entry#"${entry%%[![:space:]]*}"}"
+              entry="${entry%"${entry##*[![:space:]]}"}"
+              while [[ "$entry" == ./* ]]; do
+                entry="${entry#./}"
+              done
+              [[ -z "$entry" || "$entry" == \#* ]] && continue
+
+              if [[ "$entry" == "README.md" ]]; then
+                README_IGNORED=true
+                break
+              fi
+            done <"$SYNCIGNORE"
+          fi
+
+          if [[ "$README_IGNORED" == true ]]; then
+            echo "::notice::README.md is present in .syncignore. Not generating a new readme."
           else
             echo "::notice::Running Godocdown"
             $(go env GOPATH)/bin/godocdown -template ./.templates/readme.md >README.md
