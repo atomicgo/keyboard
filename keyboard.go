@@ -3,6 +3,8 @@ package keyboard
 import (
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
 
 	"github.com/containerd/console"
 
@@ -64,27 +66,39 @@ func stopListener() error {
 //		return false, nil // Return false to continue listening
 //	})
 func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
-	cancel := make(chan bool)
-	stopRoutine := false
+	var (
+		callbackMu  sync.Mutex
+		closeOnce   sync.Once
+		stopOnce    sync.Once
+		stopRoutine atomic.Bool
+	)
 
-	go func() {
-		for {
-			select {
-			case c := <-cancel:
-				if c {
-					return
-				}
+	stopped := make(chan struct{})
+	stop := func() {
+		stopOnce.Do(func() {
+			stopRoutine.Store(true)
+			closeOnce.Do(func() {
+				closeInput()
 
-			case keyInfo := <-mockChannel:
-				stopRoutine, _ = onKeyPress(keyInfo)
-				if stopRoutine {
-					closeInput()
-
+				if inputTTY != nil {
 					_ = inputTTY.Close()
 				}
-			}
+			})
+			close(stopped)
+		})
+	}
+
+	handleKeyPress := func(key keys.Key) (bool, error) {
+		callbackMu.Lock()
+		defer callbackMu.Unlock()
+
+		shouldStop, err := onKeyPress(key)
+		if shouldStop {
+			stop()
 		}
-	}()
+
+		return shouldStop, err
+	}
 
 	err := startListener()
 	if err != nil {
@@ -93,28 +107,53 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		}
 	}
 
-	for !stopRoutine {
-		key, keyErr := getKeyPress()
-		if keyErr != nil {
-			return keyErr
+	cancel := make(chan struct{})
+	var mockWG sync.WaitGroup
+	mockWG.Add(1)
+
+	go func() {
+		defer mockWG.Done()
+
+		for {
+			select {
+			case <-cancel:
+				return
+
+			case keyInfo := <-mockChannel:
+				shouldStop, _ := handleKeyPress(keyInfo)
+				if shouldStop {
+					return
+				}
+			}
 		}
+	}()
 
-		// check if returned key is empty
-		// if reflect.DeepEqual(key, keys.Key{}) {
-		// 	return nil
-		// }
+	defer func() {
+		close(cancel)
+		mockWG.Wait()
+	}()
 
-		stop, stopErr := onKeyPress(key)
-		if stopErr != nil {
-			return stopErr
-		}
+	if inputTTY == nil {
+		<-stopped
+	} else {
+		for !stopRoutine.Load() {
+			key, keyErr := getKeyPress()
+			if keyErr != nil {
+				return keyErr
+			}
 
-		if stop {
-			closeInput()
+			if stopRoutine.Load() {
+				break
+			}
 
-			_ = inputTTY.Close()
+			shouldStop, stopErr := handleKeyPress(key)
+			if stopErr != nil {
+				return stopErr
+			}
 
-			break
+			if shouldStop {
+				break
+			}
 		}
 	}
 
@@ -122,8 +161,6 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	if err != nil {
 		return err
 	}
-
-	cancel <- true
 
 	return nil
 }
