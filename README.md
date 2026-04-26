@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/atomicgo/atomicgo/main/assets/header.png" alt="AtomicGo">
+</p>
+
+</br>
+</br>
+
 <h1 align="center">AtomicGo | keyboard</h1>
 
 <p align="center">
@@ -43,17 +50,8 @@
 ---
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/atomicgo/atomicgo/main/assets/header.png" alt="AtomicGo">
-</p>
-
-<p align="center">
 <table>
 <tbody>
-<td align="center">
-<img width="2000" height="0"><br>
-  -----------------------------------------------------------------------------------------------------
-<img width="2000" height="0">
-</td>
 </tbody>
 </table>
 </p>
@@ -61,11 +59,6 @@
 <p align="center">
 <table>
 <tbody>
-<td align="center">
-<img width="2000" height="0"><br>
-   -----------------------------------------------------------------------------------------------------
-<img width="2000" height="0">
-</td>
 </tbody>
 </table>
 </p>
