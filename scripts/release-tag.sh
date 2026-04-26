@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+# ! ┌───────────────────────────────────────────────────────────────────┐
+# ! │                                                                   │
+# ! │                          IMPORTANT NOTE                           │
+# ! │                                                                   │
+# ! │   This file is synced with https://github.com/atomicgo/template   │
+# ! │                                                                   │
+# ! │        Please apply all changes to the template repository        │
+# ! │                                                                   │
+# ! └───────────────────────────────────────────────────────────────────┘
+
 set -euo pipefail
 
 # Colors

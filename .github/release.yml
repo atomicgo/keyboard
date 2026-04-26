@@ -1,12 +1,12 @@
-# ┌───────────────────────────────────────────────────────────────────┐
-# │                                                                   │
-# │                          IMPORTANT NOTE                           │
-# │                                                                   │
-# │   This file is synced with https://github.com/atomicgo/template   │
-# │                                                                   │
-# │        Please apply all changes to the template repository        │
-# │                                                                   │
-# └───────────────────────────────────────────────────────────────────┘
+# ! ┌───────────────────────────────────────────────────────────────────┐
+# ! │                                                                   │
+# ! │                          IMPORTANT NOTE                           │
+# ! │                                                                   │
+# ! │   This file is synced with https://github.com/atomicgo/template   │
+# ! │                                                                   │
+# ! │        Please apply all changes to the template repository        │
+# ! │                                                                   │
+# ! └───────────────────────────────────────────────────────────────────┘
 
 changelog:
   exclude:
@@ -18,7 +18,7 @@ changelog:
     - title: Breaking Changes 🛠
       labels:
         - breaking
-    - title: Exciting New Features 🎉
+    - title: New Features 🎉
       labels:
         - feature
     - title: Fixes 🔧
