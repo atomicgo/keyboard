@@ -1,0 +1,201 @@
+# ┌───────────────────────────────────────────────────────────────────┐
+# │                                                                   │
+# │                          IMPORTANT NOTE                           │
+# │                                                                   │
+# │   This file is synced with https://github.com/atomicgo/template   │
+# │                                                                   │
+# │        Please apply all changes to the template repository        │
+# │                                                                   │
+# └───────────────────────────────────────────────────────────────────┘
+
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    name: Update generated README
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'docs: autoupdate')"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install documentation tools
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Install documentation tools"
+          go install github.com/robertkrimen/godocdown/godocdown@latest
+          go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+          echo "::endgroup::"
+
+      - name: Download README templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Download README templates"
+          mkdir -p .templates
+          curl --fail --location --show-error --silent \
+            https://raw.githubusercontent.com/atomicgo/atomicgo/main/templates/example.gotxt \
+            --output .templates/example.gotxt
+          curl --fail --location --show-error --silent \
+            https://raw.githubusercontent.com/atomicgo/atomicgo/main/templates/readme.md \
+            --output .templates/readme.md
+          echo "::endgroup::"
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Configure Git"
+          git config --global --add safe.directory /github/workspace
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git update-index --assume-unchanged .github/workflows/*
+          echo "::notice::Using github-actions[bot] for generated documentation commits."
+          echo "::endgroup::"
+
+      - name: Generate README
+        id: readme
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Generate README"
+          syncignore=./.syncignore
+          include_unexported=./.github/atomicgo/include_unexported
+          readme_ignored=false
+
+          if [[ -f "$syncignore" ]]; then
+            while IFS= read -r entry || [[ -n "$entry" ]]; do
+              entry="${entry%$'\r'}"
+              entry="${entry#"${entry%%[![:space:]]*}"}"
+              entry="${entry%"${entry##*[![:space:]]}"}"
+
+              while [[ "$entry" == ./* ]]; do
+                entry="${entry#./}"
+              done
+
+              [[ -z "$entry" || "$entry" == \#* ]] && continue
+
+              if [[ "$entry" == "README.md" ]]; then
+                readme_ignored=true
+                break
+              fi
+            done <"$syncignore"
+          fi
+
+          echo "ignored=$readme_ignored" >> "$GITHUB_OUTPUT"
+
+          if [[ "$readme_ignored" == true ]]; then
+            echo "::notice::README.md is listed in .syncignore. Skipping README generation."
+          else
+            echo "::notice::Running godocdown"
+            "$(go env GOPATH)/bin/godocdown" -template ./.templates/readme.md >README.md
+
+            echo "::notice::Running gomarkdoc"
+            gomarkdoc_flags=(--template-file example=./.templates/example.gotxt)
+
+            if [[ -f "$include_unexported" ]]; then
+              gomarkdoc_flags+=(-u)
+            fi
+
+            "$(go env GOPATH)/bin/gomarkdoc" \
+              "${gomarkdoc_flags[@]}" \
+              --repository.url "https://github.com/${{ github.repository }}" \
+              --repository.default-branch main \
+              --repository.path / \
+              -e \
+              -o README.md \
+              .
+          fi
+          echo "::endgroup::"
+
+      - name: Update test badge
+        if: steps.readme.outputs.ignored != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Update unit test badge"
+          go test -v -p 1 ./... | tee test.log
+          unittest_count=$(grep -c '^=== RUN' test.log || true)
+
+          if [[ -f README.md ]]; then
+            sed -i -E \
+              's|<img src="https://img.shields.io/badge/Unit_Tests-[^"]*-magenta\?style=flat-square"|<img src="https://img.shields.io/badge/Unit_Tests-'"$unittest_count"'-magenta?style=flat-square"|g' \
+              README.md
+          fi
+
+          echo "::notice::Detected $unittest_count unit tests."
+          echo "::endgroup::"
+
+      - name: Tidy module files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Tidy module files"
+          git checkout -- go.mod 2>/dev/null || true
+          git checkout -- go.sum 2>/dev/null || true
+          go mod tidy
+          echo "::endgroup::"
+
+      - name: Commit generated changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::group::Commit generated changes"
+          changes=$(git status --porcelain -- README.md go.mod go.sum)
+
+          if [[ -z "$changes" ]]; then
+            echo "::notice::No generated documentation changes."
+            {
+              echo "## Documentation"
+              echo ""
+              echo "No generated documentation changes were detected."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::endgroup::"
+            exit 0
+          fi
+
+          printf '%s\n' "$changes"
+          git add README.md go.mod
+
+          if [[ -f go.sum ]]; then
+            git add go.sum
+          fi
+
+          git commit -m "docs: autoupdate"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+          {
+            echo "## Documentation"
+            echo ""
+            echo "Generated documentation changes were committed and pushed."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
