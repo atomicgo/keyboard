@@ -13,6 +13,10 @@ name: Go
 on:
   pull_request:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test:
     name: Test Go code
@@ -22,12 +26,12 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: stable
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Get dependencies
         run: go get -v -t -d ./...
@@ -39,4 +43,8 @@ jobs:
         run: go test -coverprofile="coverage.txt" -covermode=atomic -v -p 1 .
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./coverage.txt
+          fail_ci_if_error: true
+          use_oidc: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
