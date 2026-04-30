@@ -157,6 +157,8 @@ var hexCodes = map[string]keys.Key{
 	// support other backspace variants
 	"1b08": {Code: keys.Backspace, AltPressed: true},
 	"08":   {Code: keys.Backspace},
+	// support other delete variants
+	"1b5b50": {Code: keys.Delete},
 
 	// Powershell
 	"1b4f41": {Code: keys.Up, AltPressed: false},
