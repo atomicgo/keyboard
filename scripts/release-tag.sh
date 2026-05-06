@@ -140,7 +140,7 @@ case "$answer" in
 esac
 
 printf "%bCreating tag %s...%b\n" "$blue" "$new_tag" "$reset"
-git tag "$new_tag"
+git tag -a "$new_tag" -m "$new_tag"
 
 printf "%bPushing tag %s to origin...%b\n" "$blue" "$new_tag" "$reset"
 git push origin "$new_tag"
