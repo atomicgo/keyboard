@@ -139,6 +139,15 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 		for !stopRoutine.Load() {
 			key, keyErr := getKeyPress()
 			if keyErr != nil {
+				// Read interrupted by stop() (Close on Unix, CancelIoEx on Windows) — normal shutdown.
+				if stopRoutine.Load() {
+					break
+				}
+
+				stop()
+
+				_ = stopListener()
+
 				return keyErr
 			}
 
