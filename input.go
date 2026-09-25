@@ -1,9 +1,7 @@
 package keyboard
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"unicode/utf8"
 
 	"atomicgo.dev/keyboard/internal"
@@ -173,17 +171,9 @@ func getKeyPress() (keys.Key, error) {
 	// Read
 	numBytes, err := inputTTY.Read(buf[:])
 	if err != nil {
-		if errors.Is(err, os.ErrClosed) {
-			return keys.Key{}, nil
-		}
-
-		if err.Error() == "EOF" {
-			return keys.Key{}, nil
-		} else if err.Error() == "invalid argument" {
-			return keys.Key{}, nil
-		}
-
-		return keys.Key{}, nil
+		// Any read error (EIO after terminal hangup, EOF, closed fd) — let Listen decide.
+		// Swallowing it turns Listen into a busy loop.
+		return keys.Key{}, err
 	}
 
 	// Check if it's a sequence
