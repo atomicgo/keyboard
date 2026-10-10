@@ -1,59 +1,67 @@
 package keyboard
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io"
 	"sync"
 	"sync/atomic"
-
-	"github.com/containerd/console"
+	"time"
 
 	"atomicgo.dev/keyboard/keys"
 )
 
-var con console.Console
-var stdin = os.Stdin
-var inputTTY *os.File
-var mockChannel = make(chan keys.Key)
+// ErrAlreadyListening is returned by Listen when another Listen call is still running.
+// Only one listener can own the terminal and the simulated key presses at a time.
+var ErrAlreadyListening = errors.New("keyboard: a listener is already running")
 
-var mocking = false
+// errNoTerminal is returned by openTerminal when stdin is not an interactive terminal.
+var errNoTerminal = errors.New("keyboard: stdin is not a terminal")
 
-func startListener() error {
-	err := initInput()
-	if err != nil {
-		return err
-	}
+// errCanceled is returned by terminal.Read after terminal.Cancel was called.
+var errCanceled = errors.New("keyboard: read canceled")
 
-	if mocking {
-		return nil
-	}
+// readerShutdownTimeout bounds how long Listen waits for the terminal reader to
+// return after it was canceled. On Unix the reader always wakes up immediately;
+// the timeout only guards platforms where canceling a blocked read is best effort.
+const readerShutdownTimeout = time.Second
 
-	if con != nil {
-		if err = con.SetRaw(); err != nil {
-			return fmt.Errorf("failed to set raw mode: %w", err)
-		}
-	}
+var (
+	listening   atomic.Bool
+	mockChannel = make(chan keys.Key)
 
-	inputTTY, err = openInputTTY()
-	if err != nil {
-		return err
-	}
+	// openTerminal is a variable so tests can replace the system terminal.
+	openTerminal = openSystemTerminal
+)
 
-	return nil
+// terminal is an interactive input device that has been switched to raw mode.
+type terminal interface {
+	// Read blocks until input is available. It returns errCanceled after Cancel was called.
+	Read(p []byte) (int, error)
+	// Cancel unblocks a pending Read. It is safe to call from another goroutine.
+	Cancel()
+	// Close restores the original terminal mode and releases all resources.
+	Close() error
 }
 
-func stopListener() error {
-	if con != nil {
-		err := con.Reset()
-		if err != nil {
-			return fmt.Errorf("failed to reset console: %w", err)
-		}
-	}
-
-	return restoreInput()
+type readResult struct {
+	keys []keys.Key
+	err  error
 }
 
 // Listen calls a callback function when a key is pressed.
+//
+// The terminal is switched to raw mode while Listen runs, so Ctrl+C is delivered
+// to the callback as keys.CtrlC instead of interrupting the program. The previous
+// terminal mode is always restored before Listen returns, including when the
+// callback returns an error or panics.
+//
+// Key presses sent with SimulateKeyPress are delivered as well. If stdin is not a
+// terminal, only simulated key presses are delivered.
+//
+// Listen can be called any number of times, one after another. It returns
+// ErrAlreadyListening if it is called while another Listen call is still running,
+// for example from inside the callback.
 //
 // Simple example:
 //
@@ -65,107 +73,171 @@ func stopListener() error {
 //		fmt.Println("\r" + key.String()) // Print every key press
 //		return false, nil // Return false to continue listening
 //	})
-func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
+func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) (err error) {
+	if !listening.CompareAndSwap(false, true) {
+		return ErrAlreadyListening
+	}
+	defer listening.Store(false)
+
+	var terminalKeys <-chan readResult
+
+	term, openErr := openTerminal()
+
+	switch {
+	case openErr == nil:
+		results := make(chan readResult)
+		done := make(chan struct{})
+		readerDone := make(chan struct{})
+
+		go func() {
+			defer close(readerDone)
+
+			readTerminal(term, results, done)
+		}()
+
+		defer func() {
+			close(done)
+			term.Cancel()
+
+			select {
+			case <-readerDone:
+			case <-time.After(readerShutdownTimeout):
+			}
+
+			if closeErr := term.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("keyboard: failed to restore terminal: %w", closeErr)
+			}
+		}()
+
+		terminalKeys = results
+
+	case errors.Is(openErr, errNoTerminal):
+		// Without a terminal only simulated key presses can arrive.
+	default:
+		return openErr
+	}
+
+	for {
+		var pressed []keys.Key
+
+		select {
+		case key := <-mockChannel:
+			pressed = []keys.Key{key}
+		case result := <-terminalKeys:
+			if result.err != nil {
+				return result.err
+			}
+
+			pressed = result.keys
+		}
+
+		for _, key := range pressed {
+			stop, callbackErr := onKeyPress(key)
+			if callbackErr != nil {
+				return callbackErr
+			}
+
+			if stop {
+				return nil
+			}
+		}
+	}
+}
+
+// readTerminal reads key presses from term and sends them to results until done is closed.
+func readTerminal(term terminal, results chan<- readResult, done <-chan struct{}) {
+	var buf [256]byte
+
+	for {
+		n, err := term.Read(buf[:])
+		if errors.Is(err, errCanceled) {
+			return
+		}
+
+		var result readResult
+
+		if err != nil {
+			result.err = fmt.Errorf("keyboard: failed to read from terminal: %w", err)
+		} else {
+			// Every read from a raw terminal holds complete key presses, so the
+			// buffer is parsed as if no more input followed.
+			result.keys, _ = parseKeys(buf[:n], true, true)
+		}
+
+		if len(result.keys) == 0 && result.err == nil {
+			continue
+		}
+
+		select {
+		case results <- result:
+		case <-done:
+			return
+		}
+
+		if result.err != nil {
+			return
+		}
+	}
+}
+
+// ListenReader calls a callback function for every key press read from r.
+//
+// Unlike Listen, it does not touch the terminal and ignores simulated key presses.
+// It is meant for tests and for input that is not an interactive terminal, such as
+// a pipe. Every rune and every escape sequence in the input is delivered as a
+// separate key, and both "\r" and "\n" are delivered as keys.Enter.
+//
+// ListenReader returns nil when the callback stops it, the callback's error if it
+// returns one, and io.EOF if r is exhausted before the callback stops it.
+//
+// Example:
+//
+//	keyboard.ListenReader(strings.NewReader("y\r"), func(key keys.Key) (stop bool, err error) {
+//		fmt.Println(key) // Prints "y", then "enter"
+//		return key.Code == keys.Enter, nil
+//	})
+func ListenReader(r io.Reader, onKeyPress func(key keys.Key) (stop bool, err error)) error {
 	var (
-		callbackMu  sync.Mutex
-		closeOnce   sync.Once
-		stopOnce    sync.Once
-		stopRoutine atomic.Bool
+		pending []byte
+		chunk   [256]byte
 	)
 
-	stopped := make(chan struct{})
-	stop := func() {
-		stopOnce.Do(func() {
-			stopRoutine.Store(true)
-			closeOnce.Do(func() {
-				closeInput()
+	for {
+		n, readErr := r.Read(chunk[:])
+		pending = append(pending, chunk[:n]...)
+		atEOF := errors.Is(readErr, io.EOF)
 
-				if inputTTY != nil {
-					_ = inputTTY.Close()
-				}
-			})
-			close(stopped)
-		})
-	}
+		parsed, consumed := parseKeys(pending, atEOF, false)
+		pending = append(pending[:0], pending[consumed:]...)
 
-	handleKeyPress := func(key keys.Key) (bool, error) {
-		callbackMu.Lock()
-		defer callbackMu.Unlock()
+		for _, key := range parsed {
+			if key.Code == keys.CtrlJ {
+				key.Code = keys.Enter
+			}
 
-		shouldStop, err := onKeyPress(key)
-		if shouldStop {
-			stop()
-		}
+			stop, callbackErr := onKeyPress(key)
+			if callbackErr != nil {
+				return callbackErr
+			}
 
-		return shouldStop, err
-	}
-
-	err := startListener()
-	if err != nil {
-		if err.Error() != "provided file is not a console" {
-			return err
-		}
-	}
-
-	cancel := make(chan struct{})
-	var mockWG sync.WaitGroup
-	mockWG.Add(1)
-
-	go func() {
-		defer mockWG.Done()
-
-		for {
-			select {
-			case <-cancel:
-				return
-
-			case keyInfo := <-mockChannel:
-				shouldStop, _ := handleKeyPress(keyInfo)
-				if shouldStop {
-					return
-				}
+			if stop {
+				return nil
 			}
 		}
-	}()
 
-	defer func() {
-		close(cancel)
-		mockWG.Wait()
-	}()
+		if atEOF {
+			return io.EOF
+		}
 
-	if inputTTY == nil {
-		<-stopped
-	} else {
-		for !stopRoutine.Load() {
-			key, keyErr := getKeyPress()
-			if keyErr != nil {
-				return keyErr
-			}
-
-			if stopRoutine.Load() {
-				break
-			}
-
-			shouldStop, stopErr := handleKeyPress(key)
-			if stopErr != nil {
-				return stopErr
-			}
-
-			if shouldStop {
-				break
-			}
+		if readErr != nil {
+			return fmt.Errorf("keyboard: failed to read input: %w", readErr)
 		}
 	}
-
-	err = stopListener()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // SimulateKeyPress simulate a key press. It can be used to mock user stdin and test your application.
+// It accepts runes, strings (one key press per rune), keys.KeyCode and keys.Key values,
+// and blocks until a running Listen call has received every key press.
 //
 // Example:
 //
@@ -176,45 +248,37 @@ func Listen(onKeyPress func(key keys.Key) (stop bool, err error)) error {
 //		keyboard.SimulateKeyPress('x')                 // Simulate key press for a single rune
 //		keyboard.SimulateKeyPress('x', keys.Down, 'a') // Simulate key presses for multiple inputs
 //	}()
-func SimulateKeyPress(input ...interface{}) error {
-	for _, key := range input {
-		// Check if key is a keys.Key
-		if key, ok := key.(keys.Key); ok {
+func SimulateKeyPress(input ...any) error {
+	for _, in := range input {
+		switch key := in.(type) {
+		case keys.Key:
 			mockChannel <- key
-			return nil
-		}
-
-		// Check if key is a rune
-		if key, ok := key.(rune); ok {
-			mockChannel <- keys.Key{
-				Code:  keys.RuneKey,
-				Runes: []rune{key},
-			}
-
-			return nil
-		}
-
-		// Check if key is a string
-		if key, ok := key.(string); ok {
+		case rune:
+			mockChannel <- keys.Key{Code: keys.RuneKey, Runes: []rune{key}}
+		case string:
 			for _, r := range key {
-				mockChannel <- keys.Key{
-					Code:  keys.RuneKey,
-					Runes: []rune{r},
-				}
+				mockChannel <- keys.Key{Code: keys.RuneKey, Runes: []rune{r}}
 			}
 
-			return nil
-		}
-
-		// Check if key is a KeyCode
-		if key, ok := key.(keys.KeyCode); ok {
-			mockChannel <- keys.Key{
-				Code: key,
-			}
-
-			return nil
+		case keys.KeyCode:
+			mockChannel <- keys.Key{Code: key}
+		default:
+			return fmt.Errorf("keyboard: cannot simulate key press of type %T", in)
 		}
 	}
 
 	return nil
+}
+
+// cancelOnce is embedded by terminal implementations to make Cancel idempotent.
+type cancelOnce struct {
+	once     sync.Once
+	canceled atomic.Bool
+}
+
+func (c *cancelOnce) cancel(f func()) {
+	c.once.Do(func() {
+		c.canceled.Store(true)
+		f()
+	})
 }

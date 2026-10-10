@@ -1,9 +1,7 @@
 package keyboard
 
 import (
-	"errors"
-	"fmt"
-	"os"
+	"encoding/hex"
 	"unicode/utf8"
 
 	"atomicgo.dev/keyboard/internal"
@@ -167,74 +165,143 @@ var hexCodes = map[string]keys.Key{
 	"1b5b48": {Code: keys.Home, AltPressed: false},
 }
 
-func getKeyPress() (keys.Key, error) {
-	var buf [256]byte
+// escapeSequences holds every multi-byte input sequence that maps to a single key,
+// keyed by its raw bytes. It merges sequences and hexCodes.
+var escapeSequences, escapePrefixes, maxSequenceLen = buildSequenceTables()
 
-	// Read
-	numBytes, err := inputTTY.Read(buf[:])
-	if err != nil {
-		if errors.Is(err, os.ErrClosed) {
-			return keys.Key{}, nil
+func buildSequenceTables() (map[string]keys.Key, map[string]bool, int) {
+	all := make(map[string]keys.Key, len(sequences)+len(hexCodes))
+	for seq, key := range sequences {
+		all[seq] = key
+	}
+
+	for code, key := range hexCodes {
+		raw, err := hex.DecodeString(code)
+		if err != nil {
+			panic("keyboard: invalid hex code " + code)
 		}
 
-		if err.Error() == "EOF" {
-			return keys.Key{}, nil
-		} else if err.Error() == "invalid argument" {
-			return keys.Key{}, nil
+		all[string(raw)] = key
+	}
+
+	prefixes := make(map[string]bool)
+	longest := 0
+
+	for seq := range all {
+		longest = max(longest, len(seq))
+
+		for i := 1; i < len(seq); i++ {
+			prefixes[seq[:i]] = true
+		}
+	}
+
+	return all, prefixes, longest
+}
+
+// parseKeys splits raw input into key presses.
+//
+// Escape sequences and control characters always become keys of their own. If
+// groupRunes is true, consecutive printable runes are combined into a single
+// RuneKey, which is how pasted text arrives from a terminal. Otherwise every rune
+// becomes its own key.
+//
+// If atEOF is false and the input ends in the middle of an escape sequence or a
+// UTF-8 encoded rune, parsing stops before it. The returned count tells how many
+// bytes were consumed; the rest has to be passed again together with more input.
+// Bytes that are not valid UTF-8 are skipped.
+func parseKeys(input []byte, atEOF, groupRunes bool) ([]keys.Key, int) {
+	var (
+		parsed []keys.Key
+		group  []rune
+		pos    int
+	)
+
+	flush := func() {
+		switch {
+		case len(group) == 0:
+			return
+		case len(group) == 1 && group[0] == ' ':
+			parsed = append(parsed, keys.Key{Code: keys.Space, Runes: group})
+		default:
+			parsed = append(parsed, keys.Key{Code: keys.RuneKey, Runes: group})
 		}
 
-		return keys.Key{}, nil
+		group = nil
 	}
 
-	// Check if it's a sequence
-	if k, ok := sequences[string(buf[:numBytes])]; ok {
-		return k, nil
-	}
+	for pos < len(input) {
+		rest := input[pos:]
 
-	hex := fmt.Sprintf("%x", buf[:numBytes])
-	if k, ok := hexCodes[hex]; ok {
-		return k, nil
-	}
+		if key, n, ok := matchSequence(rest); ok {
+			flush()
 
-	// Check if the alt key is pressed.
-	if numBytes > 1 && buf[0] == 0x1b {
-		// Remove the initial escape sequence
-		c, _ := utf8.DecodeRune(buf[1:])
-		if c == utf8.RuneError {
-			return keys.Key{}, fmt.Errorf("could not decode rune after removing initial escape sequence")
+			parsed = append(parsed, key)
+			pos += n
+
+			continue
 		}
 
-		return keys.Key{AltPressed: true, Code: keys.RuneKey, Runes: []rune{c}}, nil
-	}
-
-	var runes []rune
-	b := buf[:numBytes]
-
-	// Translate stdin into runes.
-	for i, w := 0, 0; i < len(b); i += w { //nolint:wastedassign
-		r, width := utf8.DecodeRune(b[i:])
-		if r == utf8.RuneError {
-			return keys.Key{}, fmt.Errorf("could not decode rune: %w", err)
+		if !atEOF && (escapePrefixes[string(rest)] || !utf8.FullRune(rest)) {
+			break
 		}
 
-		runes = append(runes, r)
-		w = width
+		if rest[0] == internal.KeyEscape && len(rest) > 1 {
+			// An escape followed by another key means the key was typed with alt held down.
+			if r, size := utf8.DecodeRune(rest[1:]); r != utf8.RuneError {
+				flush()
+
+				key := runeKey(r)
+				key.AltPressed = true
+				parsed = append(parsed, key)
+				pos += 1 + size
+
+				continue
+			}
+		}
+
+		r, size := utf8.DecodeRune(rest)
+		pos += size
+
+		if r == utf8.RuneError && size <= 1 {
+			continue
+		}
+
+		key := runeKey(r)
+		if groupRunes && (key.Code == keys.RuneKey || key.Code == keys.Space) {
+			group = append(group, r)
+
+			continue
+		}
+
+		flush()
+
+		parsed = append(parsed, key)
 	}
 
-	if len(runes) == 0 {
-		return keys.Key{}, fmt.Errorf("received 0 runes from stdin")
-	} else if len(runes) > 1 {
-		return keys.Key{Code: keys.RuneKey, Runes: runes}, nil
+	flush()
+
+	return parsed, pos
+}
+
+// matchSequence returns the key for the longest escape sequence at the start of input.
+func matchSequence(input []byte) (keys.Key, int, bool) {
+	for n := min(len(input), maxSequenceLen); n >= 1; n-- {
+		if key, ok := escapeSequences[string(input[:n])]; ok {
+			return key, n, true
+		}
 	}
 
-	r := keys.KeyCode(runes[0])
-	if numBytes == 1 && r <= internal.KeyUnitSeparator || r == internal.KeyDelete {
-		return keys.Key{Code: r}, nil
-	}
+	return keys.Key{}, 0, false
+}
 
-	if runes[0] == ' ' {
-		return keys.Key{Code: keys.Space, Runes: runes}, nil
+// runeKey returns the key for a single rune.
+func runeKey(r rune) keys.Key {
+	switch {
+	case r == ' ':
+		return keys.Key{Code: keys.Space, Runes: []rune{r}}
+	case r <= internal.KeyUnitSeparator || r == internal.KeyDelete:
+		return keys.Key{Code: keys.KeyCode(r)}
+	default:
+		return keys.Key{Code: keys.RuneKey, Runes: []rune{r}}
 	}
-
-	return keys.Key{Code: keys.RuneKey, Runes: runes}, nil
 }
