@@ -3,6 +3,7 @@ package keyboard
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"atomicgo.dev/keyboard/keys"
 )
@@ -64,4 +65,20 @@ func ExampleSimulateKeyPress() {
 
 		return false, nil // Return false to continue listening
 	})
+}
+
+func ExampleListenReader() {
+	input := strings.NewReader("hi\x1b[A\r")
+
+	_ = ListenReader(input, func(key keys.Key) (stop bool, err error) {
+		fmt.Println(key)
+
+		return key.Code == keys.Enter, nil
+	})
+
+	// Output:
+	// h
+	// i
+	// up
+	// enter
 }
